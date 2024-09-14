@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Analytics</h1>
+<div id="analytics-container">
+    <div id="engagement-chart-container">
+        <canvas id="engagement-chart"></canvas>
+    </div>
+    <div id="metrics-container"></div>
+</div>
+
+<script src="{{ url_for('static', filename='js/analytics.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Post Update</h1>
+<form id="post-form">
+    <select id="post-platform" required>
+        <option value="">Select Platform</option>
+        <option value="twitter">Twitter</option>
+        <option value="facebook">Facebook</option>
+        <option value="linkedin">LinkedIn</option>
+    </select>
+    <textarea id="post-message" placeholder="Enter your message" required></textarea>
+    <input type="datetime-local" id="schedule-time">
+    <button type="submit">Post Update</button>
+</form>
+
+<div id="post-result"></div>
+
+<script src="{{ url_for('static', filename='js/posting.js') }}"></script>
+{% endblock %}

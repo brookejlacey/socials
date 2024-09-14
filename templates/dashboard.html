@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Dashboard</h1>
+<div id="account-form">
+    <h2>Add Social Media Account</h2>
+    <form id="add-account-form">
+        <select id="platform" required>
+            <option value="">Select Platform</option>
+            <option value="twitter">Twitter</option>
+            <option value="facebook">Facebook</option>
+            <option value="instagram">Instagram</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="tiktok">TikTok</option>
+        </select>
+        <input type="text" id="handle" placeholder="Enter handle" required>
+        <button type="submit">Add Account</button>
+    </form>
+</div>
+
+<div id="accounts-list">
+    <h2>Connected Accounts</h2>
+    <ul id="accounts"></ul>
+</div>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
