@@ -5,6 +5,10 @@ from instagram_private_api import Client as InstagramClient, ClientError
 from TikTokApi import TikTokApi
 from config import Config
 import logging
+from textblob import TextBlob
+from collections import Counter
+from datetime import datetime, timedelta
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -27,9 +31,11 @@ class SocialMediaHandler:
                 logger.error("Twitter credentials are missing in the environment variables")
                 return None
 
-            auth = tweepy.OAuth1UserHandler(
+            auth = tweepy.OAuthHandler(
                 Config.TWITTER_CONSUMER_KEY,
-                Config.TWITTER_CONSUMER_SECRET,
+                Config.TWITTER_CONSUMER_SECRET
+            )
+            auth.set_access_token(
                 Config.TWITTER_ACCESS_TOKEN,
                 Config.TWITTER_ACCESS_TOKEN_SECRET
             )
@@ -71,8 +77,6 @@ class SocialMediaHandler:
             return Linkedin(Config.LINKEDIN_USERNAME, Config.LINKEDIN_PASSWORD)
         except Exception as e:
             logger.error(f"Error initializing LinkedIn client: {str(e)}")
-            if "CHALLENGE" in str(e):
-                logger.error("LinkedIn login requires a security challenge. Please log in manually and try again.")
             return None
 
     def _init_tiktok(self):
@@ -92,26 +96,60 @@ class SocialMediaHandler:
         try:
             if platform == 'twitter':
                 user = client.get_user(screen_name=handle)
-                tweets = client.user_timeline(screen_name=handle, count=100)
+                tweets = client.user_timeline(screen_name=handle, count=200)
+                
+                # Perform sentiment analysis on tweets
+                sentiments = [TextBlob(tweet.text).sentiment.polarity for tweet in tweets]
+                avg_sentiment = np.mean(sentiments) if sentiments else 0
+                sentiment_std = np.std(sentiments) if sentiments else 0
+                
+                # Extract hashtags and mentions
+                hashtags = [hashtag['text'] for tweet in tweets for hashtag in tweet.entities['hashtags']]
+                mentions = [mention['screen_name'] for tweet in tweets for mention in tweet.entities['user_mentions']]
+                
+                # Calculate post frequency
+                if len(tweets) > 1:
+                    time_diff = tweets[0].created_at - tweets[-1].created_at
+                    post_frequency = len(tweets) / (time_diff.days + 1)
+                else:
+                    post_frequency = 0
+                
+                # Determine best posting time
+                posting_hours = [tweet.created_at.hour for tweet in tweets]
+                best_posting_time = max(set(posting_hours), key=posting_hours.count)
+                
+                # Calculate engagement rate trends
+                engagement_rates = [((tweet.favorite_count + tweet.retweet_count) / user.followers_count) * 100 for tweet in tweets]
+                engagement_trend = np.polyfit(range(len(engagement_rates)), engagement_rates, 1)[0]
+                
                 return {
                     'followers': user.followers_count,
                     'likes': sum(tweet.favorite_count for tweet in tweets),
-                    'retweets': sum(tweet.retweet_count for tweet in tweets)
+                    'retweets': sum(tweet.retweet_count for tweet in tweets),
+                    'avg_sentiment': avg_sentiment,
+                    'sentiment_std': sentiment_std,
+                    'top_hashtags': Counter(hashtags).most_common(5),
+                    'top_mentions': Counter(mentions).most_common(5),
+                    'post_frequency': round(post_frequency, 2),
+                    'best_posting_time': f"{best_posting_time}:00",
+                    'engagement_trend': engagement_trend,
+                    'engagement_rate': np.mean(engagement_rates)
                 }
             elif platform == 'facebook':
-                # Implement Facebook metrics retrieval
-                logger.warning("Facebook metrics retrieval is not implemented")
+                # Implement Facebook metrics retrieval (requires Facebook Graph API)
+                logger.warning("Facebook metrics retrieval is not fully implemented")
                 return {}
             elif platform == 'instagram':
-                # Implement Instagram metrics retrieval
-                logger.warning("Instagram metrics retrieval is not implemented")
+                # Implement Instagram metrics retrieval (requires Instagram API)
+                logger.warning("Instagram metrics retrieval is not fully implemented")
                 return {}
             elif platform == 'linkedin':
-                logger.warning("LinkedIn metrics retrieval is not implemented")
+                # Implement LinkedIn metrics retrieval (requires LinkedIn API)
+                logger.warning("LinkedIn metrics retrieval is not fully implemented")
                 return {}
             elif platform == 'tiktok':
-                # Implement TikTok metrics retrieval
-                logger.warning("TikTok metrics retrieval is not implemented")
+                # Implement TikTok metrics retrieval (requires TikTok API)
+                logger.warning("TikTok metrics retrieval is not fully implemented")
                 return {}
         except Exception as e:
             logger.error(f"Error getting metrics for {platform}: {str(e)}")

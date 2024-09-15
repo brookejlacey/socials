@@ -68,22 +68,27 @@ def add_account():
 
 @app.route('/api/get_analytics')
 def get_analytics():
-    accounts = SocialMediaAccount.query.all()
-    analytics = {}
-    
-    for account in accounts:
-        if account.platform in social_media_handler.active_platforms:
-            metrics = social_media_handler.get_metrics(account.platform, account.handle)
-        else:
-            metrics = scraper.get_metrics(account.platform, account.handle)
+    try:
+        accounts = SocialMediaAccount.query.all()
+        analytics = {}
         
-        analytics[account.id] = {
-            'platform': account.platform,
-            'handle': account.handle,
-            'metrics': get_engagement_metrics(metrics)
-        }
-    
-    return jsonify(analytics)
+        for account in accounts:
+            if account.platform in social_media_handler.active_platforms:
+                metrics = social_media_handler.get_metrics(account.platform, account.handle)
+            else:
+                metrics = scraper.get_metrics(account.platform, account.handle)
+            
+            analytics[account.id] = {
+                'platform': account.platform,
+                'handle': account.handle,
+                'metrics': get_engagement_metrics(metrics)
+            }
+        
+        logger.info(f"Successfully retrieved analytics for {len(accounts)} accounts")
+        return jsonify(analytics)
+    except Exception as e:
+        logger.error(f"Error in get_analytics: {str(e)}")
+        return jsonify({'error': 'An error occurred while fetching analytics'}), 500
 
 @app.route('/api/post_update', methods=['POST'])
 def post_update():
